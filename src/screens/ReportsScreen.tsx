@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Modal,
   Image,
+  ScrollView,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
@@ -23,11 +24,16 @@ import {useReports} from '../context/ReportsContext';
 import {useFocusEffect} from '@react-navigation/native';
 import {API_CONFIG} from '../services/apiConfig';
 import {Images} from '../assets/images';
+import {launchCamera} from 'react-native-image-picker';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Reports'>;
 
 const ReportsScreen: React.FC<Props> = ({navigation}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  const [capturedImages, setCapturedImages] = useState<Array<{uri: string}>>(
+    [],
+  );
   const {
     reportsData,
     setReportsData,
@@ -103,10 +109,58 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
     }
   };
 
-  const handleCameraPress = () => {
-    // TODO: Implement camera functionality
-    Alert.alert('Coming Soon', 'Camera functionality will be available soon!');
+  const handleCameraPress = async () => {
+    try {
+      const result = await launchCamera({
+        mediaType: 'photo',
+        quality: 1,
+        saveToPhotos: true,
+      });
+
+      if (result.assets && result.assets.length > 0) {
+        const newImage = {uri: result.assets[0].uri!};
+        setCapturedImages(prev => [...prev, newImage]);
+        setIsPreviewModalVisible(true);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to capture image');
+    }
     setIsModalVisible(false);
+  };
+
+  const handleAddMoreImages = () => {
+    setIsPreviewModalVisible(false);
+    handleCameraPress();
+  };
+
+  const handleUploadImages = async () => {
+    if (capturedImages.length === 0) {
+      Alert.alert('Error', 'No images to upload');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // TODO: Implement image upload logic
+      // For now, just show a success message
+      Alert.alert('Success', 'Images uploaded successfully');
+      setCapturedImages([]);
+      setIsPreviewModalVisible(false);
+      fetchReports();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to upload images');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setCapturedImages([]);
+    setIsPreviewModalVisible(false);
+  };
+
+  const handleDeleteImage = (index: number) => {
+    setCapturedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const renderOptionButton = (
@@ -134,6 +188,51 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         {item.description}
       </Text>
     </TouchableOpacity>
+  );
+
+  const renderImagePreview = () => (
+    <Modal
+      visible={isPreviewModalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={handleClosePreview}>
+      <View style={styles.previewModalOverlay}>
+        <View style={styles.previewModalContent}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewTitle}>Image Preview</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleClosePreview}>
+              <Image source={Images.close} style={styles.closeIcon} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.previewScrollView}>
+            {capturedImages.map((image, index) => (
+              <View key={index} style={styles.previewImageContainer}>
+                <Image source={{uri: image.uri}} style={styles.previewImage} />
+                <TouchableOpacity
+                  style={styles.deleteImageButton}
+                  onPress={() => handleDeleteImage(index)}>
+                  <Image source={Images.close} style={styles.deleteIcon} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.previewActions}>
+            <TouchableOpacity
+              style={[styles.previewButton, styles.addMoreButton]}
+              onPress={handleAddMoreImages}>
+              <Text style={styles.previewButtonText}>Add More</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.previewButton, styles.uploadButton]}
+              onPress={handleUploadImages}>
+              <Text style={styles.previewButtonText}>Upload</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 
   if (error) {
@@ -199,6 +298,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           </View>
         </View>
       </Modal>
+      {renderImagePreview()}
     </View>
   );
 };
@@ -326,6 +426,79 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     resizeMode: 'contain',
+  },
+  previewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  previewModalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  previewTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  previewScrollView: {
+    maxHeight: '70%',
+  },
+  previewImageContainer: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
+  },
+  previewActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  previewButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 8,
+    marginHorizontal: 8,
+    alignItems: 'center',
+  },
+  addMoreButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  uploadButton: {
+    backgroundColor: '#007AFF',
+  },
+  previewButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  deleteImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+    padding: 8,
+  },
+  deleteIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#fff',
   },
 });
 
