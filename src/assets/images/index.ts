@@ -4,4 +4,5 @@ export const Images = {
   plus: require('./plus.png'),
   close: require('./close.png'),
   camera: require('./camera.png'),
+  deleteIcon: require('./deleteIcon.png'),
 };

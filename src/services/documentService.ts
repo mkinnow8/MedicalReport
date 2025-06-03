@@ -41,3 +41,27 @@ export const prepareDocumentUpload = (file: any) => {
     onConfirm: () => uploadDocument(file),
   };
 };
+
+export const deleteReport = async (reportId: string) => {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.DELETE_REPORT}${API_CONFIG.USER_ID}/${reportId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete report');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    throw error;
+  }
+};

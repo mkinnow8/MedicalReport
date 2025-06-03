@@ -19,6 +19,7 @@ import DocumentPicker from 'react-native-document-picker';
 import {
   uploadDocument,
   prepareDocumentUpload,
+  deleteReport,
 } from '../services/documentService';
 import {useReports} from '../context/ReportsContext';
 import {useFocusEffect} from '@react-navigation/native';
@@ -163,6 +164,34 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
     setCapturedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDeleteReport = async (reportId: string) => {
+    Alert.alert(
+      'Delete Report',
+      'Are you sure you want to delete this report?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              await deleteReport(reportId);
+              fetchReports(); // Refresh the list after deletion
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete report');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const renderOptionButton = (
     imageSource: any,
     title: string,
@@ -179,10 +208,19 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
       style={styles.reportItem}
       onPress={() => navigation.navigate('ReportDetail', {report: item})}>
       <View style={styles.reportHeader}>
-        <Text style={styles.reportTitle}>{item?.title}</Text>
-        <Text style={styles.reportDate}>
-          {new Date(item.created_at).toLocaleDateString()}
+        <Text style={styles.reportTitle} numberOfLines={1}>
+          {item?.title}
         </Text>
+        <View style={styles.reportActions}>
+          <Text style={styles.reportDate}>
+            {new Date(item.created_at).toLocaleDateString()}
+          </Text>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteReport(item.report_id)}>
+            <Image source={Images.deleteIcon} style={styles.reportDeleteIcon} />
+          </TouchableOpacity>
+        </View>
       </View>
       <Text style={styles.reportDescription} numberOfLines={3}>
         {item.description}
@@ -341,6 +379,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    width: '65%',
+    marginRight: 6,
   },
   reportDate: {
     fontSize: 14,
@@ -499,6 +539,21 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     tintColor: '#fff',
+  },
+  reportActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderwidth: 1,
+  },
+  deleteButton: {
+    marginLeft: 12,
+    padding: 4,
+  },
+  reportDeleteIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#FF3B30',
+    resizeMode: 'contain',
   },
 });
 
