@@ -223,7 +223,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         </View>
       </View>
       <Text style={styles.reportDescription} numberOfLines={3}>
-        {item.description}
+        {item.report_description.summary}
       </Text>
     </TouchableOpacity>
   );

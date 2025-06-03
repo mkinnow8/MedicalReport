@@ -12,7 +12,7 @@ import {RootStackParamList} from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReportDetail'>;
 
-const ReportDetailScreen: React.FC<Props> = ({route, navigation}) => {
+const ReportDetailScreen: React.FC<Props> = ({route}) => {
   const {report} = route.params;
 
   if (!report) {
@@ -23,10 +23,20 @@ const ReportDetailScreen: React.FC<Props> = ({route, navigation}) => {
     );
   }
 
+  const renderDescriptionSection = (title: string, content: string) => (
+    <View style={styles.descriptionSection}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.sectionContent}>{content}</Text>
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{report.title}</Text>
+        <Text style={styles.date}>
+          {new Date(report.created_at).toLocaleDateString()}
+        </Text>
       </View>
 
       <View style={styles.content}>
@@ -49,9 +59,31 @@ const ReportDetailScreen: React.FC<Props> = ({route, navigation}) => {
           </View>
         </View>
 
-        <View style={styles.descriptionCard}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{report.description}</Text>
+        <View style={styles.descriptionContainer}>
+          {renderDescriptionSection(
+            'Summary',
+            report.report_description?.summary,
+          )}
+          {renderDescriptionSection(
+            'Symptoms',
+            report.report_description?.symptoms,
+          )}
+          {renderDescriptionSection(
+            'Precautionary Measures',
+            report.report_description?.precautionary_measures,
+          )}
+          {renderDescriptionSection(
+            'Medications',
+            report.report_description?.medications,
+          )}
+          {renderDescriptionSection(
+            'Vitals',
+            report.report_description?.vitals,
+          )}
+          {renderDescriptionSection(
+            'Comparison Summary',
+            report.report_description?.comparison_summary,
+          )}
         </View>
 
         {report.report_url && (
@@ -129,30 +161,25 @@ const styles = StyleSheet.create({
     color: '#666',
     flex: 1,
   },
-  descriptionCard: {
+  descriptionContainer: {
     backgroundColor: '#fff',
-    borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: 16,
+    borderRadius: 8,
+  },
+  descriptionSection: {
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  description: {
+  sectionContent: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   downloadButton: {
     backgroundColor: '#007AFF',
@@ -166,6 +193,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  date: {
+    fontSize: 14,
+    color: '#666',
   },
 });
 

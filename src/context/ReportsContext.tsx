@@ -1,13 +1,19 @@
 import React, {createContext, useContext, useState, ReactNode} from 'react';
 
-export interface Report {
+export type Report = {
   report_id: string;
-  report_url: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
   title: string;
-}
+  created_at: string;
+  report_url?: string;
+  report_description: {
+    summary: string;
+    symptoms: string;
+    precautionary_measures: string;
+    medications: string;
+    vitals: string;
+    comparison_summary: string;
+  };
+};
 
 interface ReportsData {
   reports: Report[];
