@@ -20,6 +20,7 @@ import {
   uploadDocument,
   prepareDocumentUpload,
   deleteReport,
+  compareReports,
 } from '../services/documentService';
 import {useReports} from '../context/ReportsContext';
 import {useFocusEffect} from '@react-navigation/native';
@@ -35,6 +36,8 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
   const [capturedImages, setCapturedImages] = useState<Array<{uri: string}>>(
     [],
   );
+  const [isCompareMode, setIsCompareMode] = useState(false);
+  const [selectedReports, setSelectedReports] = useState<string[]>([]);
   const {
     reportsData,
     setReportsData,
@@ -192,6 +195,44 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
     );
   };
 
+  const handleComparePress = () => {
+    setIsCompareMode(!isCompareMode);
+    setSelectedReports([]);
+  };
+
+  const handleReportSelect = (reportId: string) => {
+    if (selectedReports.includes(reportId)) {
+      setSelectedReports(prev => prev.filter(id => id !== reportId));
+    } else if (selectedReports.length < 2) {
+      setSelectedReports(prev => [...prev, reportId]);
+    }
+  };
+
+  const handleCompareReports = async () => {
+    if (selectedReports.length !== 2) {
+      Alert.alert('Error', 'Please select exactly two reports to compare');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const comparisonResult = await compareReports(selectedReports);
+      const selectedReportDetails = reportsData?.reports.filter(report =>
+        selectedReports.includes(report.report_id),
+      );
+      navigation.navigate('ReportComparison', {
+        comparison: comparisonResult,
+        reportTitles: selectedReportDetails?.map(report => report.title) || [],
+      });
+    } catch (err) {
+      Alert.alert('Error', 'Failed to compare reports');
+    } finally {
+      setIsLoading(false);
+      setIsCompareMode(false);
+      setSelectedReports([]);
+    }
+  };
+
   const renderOptionButton = (
     imageSource: any,
     title: string,
@@ -205,8 +246,19 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
 
   const renderReportItem = ({item}: {item: any}) => (
     <TouchableOpacity
-      style={styles.reportItem}
-      onPress={() => navigation.navigate('ReportDetail', {report: item})}>
+      style={[
+        styles.reportItem,
+        isCompareMode &&
+          selectedReports.includes(item.report_id) &&
+          styles.selectedReport,
+      ]}
+      onPress={() => {
+        if (isCompareMode) {
+          handleReportSelect(item.report_id);
+        } else {
+          navigation.navigate('ReportDetail', {report: item});
+        }
+      }}>
       <View style={styles.reportHeader}>
         <Text style={styles.reportTitle} numberOfLines={1}>
           {item?.title}
@@ -215,11 +267,16 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           <Text style={styles.reportDate}>
             {new Date(item.created_at).toLocaleDateString()}
           </Text>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteReport(item.report_id)}>
-            <Image source={Images.deleteIcon} style={styles.reportDeleteIcon} />
-          </TouchableOpacity>
+          {!isCompareMode && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteReport(item.report_id)}>
+              <Image
+                source={Images.deleteIcon}
+                style={styles.reportDeleteIcon}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
       <Text style={styles.reportDescription} numberOfLines={3}>
@@ -283,7 +340,19 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Your Reports</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Your Reports</Text>
+        <TouchableOpacity
+          style={[
+            styles.compareButton,
+            isCompareMode && styles.compareButtonActive,
+          ]}
+          onPress={handleComparePress}>
+          <Text style={styles.compareButtonText}>
+            {isCompareMode ? 'Cancel' : 'Compare'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         data={reportsData?.reports}
         renderItem={renderReportItem}
@@ -298,7 +367,18 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           ) : null
         }
       />
-      <FloatingActionButton onPress={() => setIsModalVisible(true)} />
+      {isCompareMode && selectedReports.length === 2 && (
+        <TouchableOpacity
+          style={styles.compareActionButton}
+          onPress={handleCompareReports}>
+          <Text style={styles.compareActionButtonText}>
+            Compare Selected Reports
+          </Text>
+        </TouchableOpacity>
+      )}
+      {!isCompareMode && (
+        <FloatingActionButton onPress={() => setIsModalVisible(true)} />
+      )}
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -554,6 +634,46 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: '#FF3B30',
     resizeMode: 'contain',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  compareButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+  },
+  compareButtonActive: {
+    backgroundColor: '#FF3B30',
+  },
+  compareButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedReport: {
+    borderColor: '#007AFF',
+    borderWidth: 2,
+  },
+  compareActionButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  compareActionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

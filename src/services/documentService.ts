@@ -5,7 +5,7 @@ export const uploadDocument = async (file: any): Promise<void> => {
   const url =
     API_CONFIG.BASE_URL + API_CONFIG.UPLOAD_REPORT + API_CONFIG.USER_ID;
   const formData = new FormData();
-  formData.append('report', {
+  formData.append('reports', {
     uri: file.uri,
     type: file.type,
     name: file.name,
@@ -62,6 +62,36 @@ export const deleteReport = async (reportId: string) => {
     return await response.json();
   } catch (error) {
     console.error('Error deleting report:', error);
+    throw error;
+  }
+};
+
+export const compareReports = async (reportIds: string[]) => {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.COMPARE_REPORTS}${API_CONFIG.USER_ID}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          report_ids: reportIds,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to compare reports');
+    }
+
+    const data = await response.json();
+    console.log('Compare successful:', data);
+
+    return data?.data;
+  } catch (error) {
+    console.error('Error comparing reports:', error);
     throw error;
   }
 };

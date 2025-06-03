@@ -6,6 +6,7 @@ import BMIScreen from '../screens/BMIScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import ReportDetailScreen from '../screens/ReportDetailScreen';
 import PDFPreviewScreen from '../screens/PDFPreviewScreen';
+import ReportComparisonScreen from '../screens/ReportComparisonScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -46,6 +47,10 @@ export const AppNavigator = () => {
         name="PDFPreview"
         component={PDFPreviewScreen}
         options={{title: 'Preview Document'}}
+      />
+      <Stack.Screen
+        name="ReportComparison"
+        component={ReportComparisonScreen}
       />
     </Stack.Navigator>
   );

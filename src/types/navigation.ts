@@ -11,6 +11,10 @@ export type RootStackParamList = {
     uri: string;
     onConfirm: () => Promise<void>;
   };
+  ReportComparison: {
+    comparison: any; // TODO: Add proper type for comparison result
+    reportTitles: string[];
+  };
 };
 
 export type Report = {
