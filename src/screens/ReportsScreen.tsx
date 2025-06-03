@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Modal,
+  Image,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
@@ -20,10 +22,12 @@ import {
 import {useReports} from '../context/ReportsContext';
 import {useFocusEffect} from '@react-navigation/native';
 import {API_CONFIG} from '../services/apiConfig';
+import {Images} from '../assets/images';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Reports'>;
 
 const ReportsScreen: React.FC<Props> = ({navigation}) => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const {
     reportsData,
     setReportsData,
@@ -78,7 +82,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           DocumentPicker.types.doc,
           DocumentPicker.types.docx,
         ],
-        mode: 'open', // ✅ Required for ACTION_OPEN_DOCUMENT style URI access
+        mode: 'open',
       });
 
       const file = result[0];
@@ -95,9 +99,26 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
       }
     } finally {
       setIsLoading(false);
+      setIsModalVisible(false);
     }
   };
-  console.log('REPORTS DATA', reportsData?.reports);
+
+  const handleCameraPress = () => {
+    // TODO: Implement camera functionality
+    Alert.alert('Coming Soon', 'Camera functionality will be available soon!');
+    setIsModalVisible(false);
+  };
+
+  const renderOptionButton = (
+    imageSource: any,
+    title: string,
+    onPress: () => void,
+  ) => (
+    <TouchableOpacity style={styles.optionButton} onPress={onPress}>
+      <Image source={imageSource} style={styles.optionIcon} />
+      <Text style={styles.optionText}>{title}</Text>
+    </TouchableOpacity>
+  );
 
   const renderReportItem = ({item}: {item: any}) => (
     <TouchableOpacity
@@ -140,13 +161,44 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           ) : null
         }
       />
-      <FloatingActionButton onPress={handleDocumentPick} />
+      <FloatingActionButton onPress={() => setIsModalVisible(true)} />
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       )}
+
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Report</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setIsModalVisible(false)}>
+                <Image source={Images.close} style={styles.closeIcon} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.optionsContainer}>
+              {renderOptionButton(
+                Images.report,
+                'Pick Document',
+                handleDocumentPick,
+              )}
+              {renderOptionButton(
+                Images.camera,
+                'Take Photo',
+                handleCameraPress,
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -221,6 +273,59 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    minHeight: 200,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+  },
+  optionButton: {
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    width: '45%',
+  },
+  optionText: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#333',
+  },
+  optionIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  closeIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
   },
 });
 
