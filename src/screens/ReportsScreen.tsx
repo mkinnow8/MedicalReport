@@ -26,13 +26,15 @@ import {useReports} from '../context/ReportsContext';
 import {useFocusEffect} from '@react-navigation/native';
 import {API_CONFIG} from '../services/apiConfig';
 import {Images} from '../assets/images';
-import {launchCamera} from 'react-native-image-picker';
+import {CameraModule} from '../components/CameraModule';
+import {PhotoFile} from 'react-native-vision-camera';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Reports'>;
 
 const ReportsScreen: React.FC<Props> = ({navigation}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [capturedImages, setCapturedImages] = useState<Array<{uri: string}>>(
     [],
   );
@@ -113,25 +115,20 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
     }
   };
 
-  const handleCameraPress = async () => {
-    try {
-      const result = await launchCamera({
-        mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 1280,
-        maxHeight: 1280,
-        saveToPhotos: true,
-      });
-      console.log('Result:', result);
-      if (result.assets && result.assets.length > 0) {
-        const newImage = {uri: result.assets[0].uri!};
-        setCapturedImages(prev => [...prev, newImage]);
-        setIsPreviewModalVisible(true);
-      }
-    } catch (err) {
-      Alert.alert('Error', 'Failed to capture image');
-    }
+  const handleCameraPress = () => {
     setIsModalVisible(false);
+    setIsCameraVisible(true);
+  };
+
+  const handleCameraCapture = (photo: PhotoFile) => {
+    const newImage = {uri: `file://${photo.path}`};
+    setCapturedImages(prev => [...prev, newImage]);
+    setIsCameraVisible(false);
+    setIsPreviewModalVisible(true);
+  };
+
+  const handleCameraClose = () => {
+    setIsCameraVisible(false);
   };
 
   const handleAddMoreImages = () => {
@@ -448,6 +445,16 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         </View>
       </Modal>
       {renderImagePreview()}
+
+      <Modal
+        visible={isCameraVisible}
+        animationType="slide"
+        onRequestClose={handleCameraClose}>
+        <CameraModule
+          onCapture={handleCameraCapture}
+          onClose={handleCameraClose}
+        />
+      </Modal>
     </View>
   );
 };
