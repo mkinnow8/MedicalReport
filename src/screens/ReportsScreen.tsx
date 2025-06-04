@@ -117,10 +117,12 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
     try {
       const result = await launchCamera({
         mediaType: 'photo',
-        quality: 1,
+        quality: 0.8,
+        maxWidth: 1280,
+        maxHeight: 1280,
         saveToPhotos: true,
       });
-
+      console.log('Result:', result);
       if (result.assets && result.assets.length > 0) {
         const newImage = {uri: result.assets[0].uri!};
         setCapturedImages(prev => [...prev, newImage]);
@@ -145,13 +147,42 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
 
     setIsLoading(true);
     try {
-      // TODO: Implement image upload logic
-      // For now, just show a success message
+      const formData = new FormData();
+
+      // Append each image to the form data
+      capturedImages.forEach((image, index) => {
+        formData.append('reports', {
+          uri: image.uri,
+          type: 'image/jpeg',
+          name: `image_${index}.jpg`,
+        });
+      });
+      console.log('Form data:', formData);
+      const response = await fetch(
+        API_CONFIG.BASE_URL + API_CONFIG.UPLOAD_REPORT + API_CONFIG.USER_ID,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
+
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   console.log('Upload failed:', errorData);
+      //   throw new Error(
+      //     errorData.message || `HTTP error! status: ${response.status}`,
+      //   );
+      // }
+
+      const data = await response.json();
+      console.log('Upload successful:', data);
+
       Alert.alert('Success', 'Images uploaded successfully');
       setCapturedImages([]);
       setIsPreviewModalVisible(false);
       fetchReports();
     } catch (err) {
+      console.error('Upload error:', err);
       Alert.alert('Error', 'Failed to upload images');
     } finally {
       setIsLoading(false);
