@@ -32,43 +32,80 @@ const ReportComparisonScreen: React.FC<Props> = ({route}) => {
 
   const result: ComparisonResult = comparison.comparison_result;
 
-  const renderComparisonSection = (title: string, content: string) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionContent}>{content}</Text>
-    </View>
-  );
+  const renderComparisonSection = (
+    title: string,
+    content: string | undefined,
+  ) => {
+    if (!content || content.trim() === '') {
+      return null;
+    }
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sectionContent}>{content}</Text>
+      </View>
+    );
+  };
+
+  const hasAnyContent = () => {
+    return (
+      comparison?.summary?.trim() ||
+      comparison?.symptoms?.trim() ||
+      comparison?.precautionary_measures?.trim() ||
+      comparison?.medications?.trim() ||
+      comparison?.vitals?.trim() ||
+      comparison?.comparison_summary?.trim()
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Report Comparison</Text>
-      </View>
-
-      <View style={styles.reportsInfo}>
-        <View style={styles.reportCard}>
-          <Text style={styles.reportLabel}>Report 1</Text>
-          <Text style={styles.reportTitle} numberOfLines={2}>
-            {reportTitles[0]}
-          </Text>
-        </View>
-        <View style={styles.vsContainer}>
-          <Text style={styles.vsText}>VS</Text>
-        </View>
-        <View style={styles.reportCard}>
-          <Text style={styles.reportLabel}>Report 2</Text>
-          <Text style={styles.reportTitle} numberOfLines={2}>
-            {reportTitles[1]}
-          </Text>
-        </View>
-      </View>
-
       <View style={styles.content}>
-        {renderComparisonSection('Summary', result.comparison_summary)}
-        {renderComparisonSection('Similarities', result.similarities)}
-        {renderComparisonSection('Differences', result.differences)}
-        {renderComparisonSection('Improvements', result.improvements)}
-        {renderComparisonSection('Recommendations', result.recommendations)}
+        <View style={styles.header}>
+          <Text style={styles.title}>Report Comparison</Text>
+          <Text style={styles.subtitle}>
+            Comparing: {reportTitles.join(' vs ')}
+          </Text>
+        </View>
+
+        <View style={styles.reportsInfo}>
+          <View style={styles.reportCard}>
+            <Text style={styles.reportLabel}>Report 1</Text>
+            <Text style={styles.reportTitle} numberOfLines={2}>
+              {reportTitles[0]}
+            </Text>
+          </View>
+          <View style={styles.vsContainer}>
+            <Text style={styles.vsText}>VS</Text>
+          </View>
+          <View style={styles.reportCard}>
+            <Text style={styles.reportLabel}>Report 2</Text>
+            <Text style={styles.reportTitle} numberOfLines={2}>
+              {reportTitles[1]}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.comparisonContainer}>
+          {hasAnyContent() ? (
+            <>
+              {renderComparisonSection('Summary', comparison?.summary)}
+              {renderComparisonSection('Symptoms', comparison?.symptoms)}
+              {renderComparisonSection(
+                'Precautionary Measures',
+                comparison?.precautionary_measures,
+              )}
+              {renderComparisonSection('Medications', comparison?.medications)}
+              {renderComparisonSection('Vitals', comparison?.vitals)}
+              {renderComparisonSection(
+                'Comparison Summary',
+                comparison?.comparison_summary,
+              )}
+            </>
+          ) : (
+            <Text style={styles.emptyMessage}>No comparison possible</Text>
+          )}
+        </View>
       </View>
     </ScrollView>
   );
@@ -95,6 +132,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
   },
   reportsInfo: {
     flexDirection: 'row',
@@ -131,6 +173,20 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
   },
+  comparisonContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   section: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -155,6 +211,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  emptyMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
   },
 });
 

@@ -23,19 +23,38 @@ const ReportDetailScreen: React.FC<Props> = ({route}) => {
     );
   }
 
-  const renderDescriptionSection = (title: string, content: string) => (
-    <View style={styles.descriptionSection}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionContent}>{content}</Text>
-    </View>
-  );
+  const renderDescriptionSection = (
+    title: string,
+    content: string | undefined,
+  ) => {
+    if (!content || content.trim() === '') {
+      return null;
+    }
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sectionContent}>{content}</Text>
+      </View>
+    );
+  };
+
+  const hasAnyContent = () => {
+    return (
+      report.report_description?.summary?.trim() ||
+      report.report_description?.symptoms?.trim() ||
+      report.report_description?.precautionary_measures?.trim() ||
+      report.report_description?.medications?.trim() ||
+      report.report_description?.vitals?.trim() ||
+      report.report_description?.comparison_summary?.trim()
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{report.title}</Text>
         <Text style={styles.date}>
-          {new Date(report.created_at).toLocaleDateString()}
+          {new Date(report.created_at).toLocaleString()}
         </Text>
       </View>
 
@@ -44,13 +63,13 @@ const ReportDetailScreen: React.FC<Props> = ({route}) => {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Created:</Text>
             <Text style={styles.infoText}>
-              {new Date(report.created_at).toLocaleDateString()}
+              {new Date(report.created_at).toLocaleString()}
             </Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Updated:</Text>
             <Text style={styles.infoText}>
-              {new Date(report.updated_at).toLocaleDateString()}
+              {new Date(report.updated_at).toLocaleString()}
             </Text>
           </View>
           <View style={styles.infoRow}>
@@ -60,29 +79,35 @@ const ReportDetailScreen: React.FC<Props> = ({route}) => {
         </View>
 
         <View style={styles.descriptionContainer}>
-          {renderDescriptionSection(
-            'Summary',
-            report.report_description?.summary,
-          )}
-          {renderDescriptionSection(
-            'Symptoms',
-            report.report_description?.symptoms,
-          )}
-          {renderDescriptionSection(
-            'Precautionary Measures',
-            report.report_description?.precautionary_measures,
-          )}
-          {renderDescriptionSection(
-            'Medications',
-            report.report_description?.medications,
-          )}
-          {renderDescriptionSection(
-            'Vitals',
-            report.report_description?.vitals,
-          )}
-          {renderDescriptionSection(
-            'Comparison Summary',
-            report.report_description?.comparison_summary,
+          {hasAnyContent() ? (
+            <>
+              {renderDescriptionSection(
+                'Summary',
+                report.report_description?.summary,
+              )}
+              {renderDescriptionSection(
+                'Symptoms',
+                report.report_description?.symptoms,
+              )}
+              {renderDescriptionSection(
+                'Precautionary Measures',
+                report.report_description?.precautionary_measures,
+              )}
+              {renderDescriptionSection(
+                'Medications',
+                report.report_description?.medications,
+              )}
+              {renderDescriptionSection(
+                'Vitals',
+                report.report_description?.vitals,
+              )}
+              {renderDescriptionSection(
+                'Comparison Summary',
+                report.report_description?.comparison_summary,
+              )}
+            </>
+          ) : (
+            <Text style={styles.emptyMessage}>No description available</Text>
           )}
         </View>
 
@@ -167,7 +192,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 8,
   },
-  descriptionSection: {
+  section: {
     marginBottom: 20,
   },
   sectionTitle: {
@@ -197,6 +222,13 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 14,
     color: '#666',
+  },
+  emptyMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
   },
 });
 

@@ -309,28 +309,27 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         }
       }}>
       <View style={styles.reportHeader}>
-        <Text style={styles.reportTitle} numberOfLines={1}>
+        <Text style={styles.reportTitle} numberOfLines={2}>
           {item?.title}
         </Text>
         <View style={styles.reportActions}>
           <Text style={styles.reportDate}>
-            {new Date(item.created_at).toLocaleDateString()}
+            {new Date(item.updated_at).toLocaleString()}
           </Text>
-          {!isCompareMode && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteReport(item.report_id)}>
-              <Image
-                source={Images.deleteIcon}
-                style={styles.reportDeleteIcon}
-              />
-            </TouchableOpacity>
-          )}
         </View>
       </View>
-      <Text style={styles.reportDescription} numberOfLines={3}>
-        {item.report_description.summary}
-      </Text>
+      <View style={styles.reportActions}>
+        <Text style={styles.reportDescription} numberOfLines={3}>
+          {item.report_description.summary}
+        </Text>
+        {!isCompareMode && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteReport(item.report_id)}>
+            <Image source={Images.deleteIcon} style={styles.reportDeleteIcon} />
+          </TouchableOpacity>
+        )}
+      </View>
     </TouchableOpacity>
   );
 
@@ -511,10 +510,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   reportTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    width: '65%',
+    width: '50%',
     marginRight: 6,
   },
   reportDate: {
@@ -525,6 +524,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+    width: '90%',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
