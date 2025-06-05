@@ -1,7 +1,7 @@
 import {API_CONFIG} from './apiConfig';
 import {logApiRequest, logApiResponse, logApiError} from '../utils/apiLogger';
 
-export const uploadDocument = async (file: any): Promise<void> => {
+export const uploadDocument = async (file: any): Promise<any> => {
   const url =
     API_CONFIG.BASE_URL + API_CONFIG.UPLOAD_REPORT + API_CONFIG.USER_ID;
   const formData = new FormData();
@@ -28,6 +28,7 @@ export const uploadDocument = async (file: any): Promise<void> => {
     const data = await response.json();
     console.log('Upload successful:', data);
     logApiResponse(url, response, data);
+    return data.data;
   } catch (error) {
     console.error('Upload error:', error);
     logApiError(url, error instanceof Error ? error.message : 'Unknown error');
@@ -38,7 +39,10 @@ export const uploadDocument = async (file: any): Promise<void> => {
 export const prepareDocumentUpload = (file: any) => {
   return {
     uri: file.uri,
-    onConfirm: () => uploadDocument(file),
+    onConfirm: async () => {
+      const uploadedReport = await uploadDocument(file);
+      return uploadedReport;
+    },
   };
 };
 

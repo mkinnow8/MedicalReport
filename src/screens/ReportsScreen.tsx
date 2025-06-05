@@ -38,6 +38,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
   );
   const [isCompareMode, setIsCompareMode] = useState(false);
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const {
     reportsData,
     setReportsData,
@@ -100,15 +101,26 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         navigation.navigate('PDFPreview', prepareDocumentUpload(file));
       } else {
         setIsLoading(true);
-        await uploadDocument(file);
-        fetchReports();
+        try {
+          const uploadedReport = await uploadDocument(file);
+          await fetchReports();
+          if (uploadedReport) {
+            navigation.navigate('ReportDetail', {report: uploadedReport});
+          }
+        } catch (err) {
+          if (!DocumentPicker.isCancel(err)) {
+            Alert.alert('Error', 'Failed to upload document');
+          }
+        } finally {
+          setIsLoading(false);
+          setIsModalVisible(false);
+        }
       }
     } catch (err) {
       if (!DocumentPicker.isCancel(err)) {
         Alert.alert('Error', 'Failed to upload document');
       }
     } finally {
-      setIsLoading(false);
       setIsModalVisible(false);
     }
   };
@@ -145,7 +157,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
       return;
     }
 
-    setIsLoading(true);
+    setIsUploading(true);
     try {
       const formData = new FormData();
 
@@ -166,26 +178,32 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         },
       );
 
-      // if (!response.ok) {
-      //   const errorData = await response.json();
-      //   console.log('Upload failed:', errorData);
-      //   throw new Error(
-      //     errorData.message || `HTTP error! status: ${response.status}`,
-      //   );
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log('Upload failed:', errorData);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`,
+        );
+      }
 
       const data = await response.json();
       console.log('Upload successful:', data);
 
-      Alert.alert('Success', 'Images uploaded successfully');
+      // Fetch the updated reports list
+      await fetchReports();
+
+      // Navigate to the newly uploaded report
+      if (data.data) {
+        navigation.navigate('ReportDetail', {report: data.data});
+      }
+
       setCapturedImages([]);
       setIsPreviewModalVisible(false);
-      fetchReports();
     } catch (err) {
       console.error('Upload error:', err);
       Alert.alert('Error', 'Failed to upload images');
     } finally {
-      setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
@@ -347,13 +365,19 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
           <View style={styles.previewActions}>
             <TouchableOpacity
               style={[styles.previewButton, styles.addMoreButton]}
-              onPress={handleAddMoreImages}>
+              onPress={handleAddMoreImages}
+              disabled={isUploading}>
               <Text style={styles.previewButtonText}>Add More</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.previewButton, styles.uploadButton]}
-              onPress={handleUploadImages}>
-              <Text style={styles.previewButtonText}>Upload</Text>
+              onPress={handleUploadImages}
+              disabled={isUploading}>
+              {isUploading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.previewButtonText}>Upload</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -390,7 +414,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
         keyExtractor={item => item.report_id}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={fetchReports} />
+          <RefreshControl refreshing={false} onRefresh={fetchReports} />
         }
         ListEmptyComponent={
           !isLoading ? (
@@ -410,7 +434,7 @@ const ReportsScreen: React.FC<Props> = ({navigation}) => {
       {!isCompareMode && (
         <FloatingActionButton onPress={() => setIsModalVisible(true)} />
       )}
-      {isLoading && (
+      {isLoading && !isPreviewModalVisible && !isUploading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Loading...</Text>
@@ -626,6 +650,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginHorizontal: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
   },
   addMoreButton: {
     backgroundColor: '#f0f0f0',

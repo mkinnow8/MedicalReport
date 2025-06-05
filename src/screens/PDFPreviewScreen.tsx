@@ -74,8 +74,19 @@ const PDFPreviewScreen: React.FC<Props> = ({route, navigation}) => {
   const handleConfirm = async () => {
     setIsLoading(true);
     try {
-      await onConfirm();
-      navigation.goBack();
+      const uploadedReport = await onConfirm();
+      if (uploadedReport) {
+        // Reset the navigation stack and navigate to report detail
+        navigation.reset({
+          index: 0,
+          routes: [
+            {name: 'Reports'},
+            {name: 'ReportDetail', params: {report: uploadedReport}},
+          ],
+        });
+      } else {
+        navigation.goBack();
+      }
     } catch (error) {
       console.error('Error uploading document:', error);
       setError('Failed to upload document');

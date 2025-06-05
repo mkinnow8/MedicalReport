@@ -9,7 +9,7 @@ export type RootStackParamList = {
   };
   PDFPreview: {
     uri: string;
-    onConfirm: () => Promise<void>;
+    onConfirm: () => Promise<any>;
   };
   ReportComparison: {
     comparison: any; // TODO: Add proper type for comparison result
