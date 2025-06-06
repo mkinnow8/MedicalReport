@@ -9,11 +9,17 @@ export type RootStackParamList = {
   };
   PDFPreview: {
     uri: string;
-    onConfirm: () => Promise<any>;
+    onConfirm: (report: any) => Promise<any>;
   };
   ReportComparison: {
     comparison: any; // TODO: Add proper type for comparison result
     reportTitles: string[];
+  };
+  Trackers: undefined;
+  AddTracker: undefined;
+  AddRecord: {
+    trackerType: string;
+    trackerName: string;
   };
 };
 

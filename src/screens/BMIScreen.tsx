@@ -5,11 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
 import {calculateBMI, getBMICategory} from '../utils/bmiCalculator';
-import {ReportTab} from '../components/ReportTab';
+import {Tab} from '../components/Tab';
 import {Images} from '../assets/images';
 import {useUser} from '../context/UserContext';
 
@@ -118,11 +119,17 @@ const BMIScreen: React.FC<Props> = ({navigation}) => {
         <Text style={styles.infoText}>Height: {userInfo?.data?.height} cm</Text>
       </View>
 
-      <ReportTab
+      <Tab
         icon={Images.report}
         title="Reports"
         description="View your detailed health reports and history"
         onPress={() => navigation.navigate('Reports')}
+      />
+      <Tab
+        icon={Images.report}
+        title="Trackers"
+        description="View your trackers and history"
+        onPress={() => navigation.navigate('Trackers')}
       />
     </ScrollView>
   );

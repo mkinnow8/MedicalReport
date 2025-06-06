@@ -2,14 +2,14 @@ import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {Images} from '../assets/images';
 
-interface ReportTabProps {
+interface TabProps {
   icon: string;
   title: string;
   description: string;
   onPress: () => void;
 }
 
-export const ReportTab: React.FC<ReportTabProps> = ({
+export const Tab: React.FC<ReportTabProps> = ({
   icon,
   title,
   description,
