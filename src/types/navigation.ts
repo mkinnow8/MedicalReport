@@ -28,7 +28,10 @@ export type RootStackParamList = {
       normal_range: string;
       is_required: boolean;
       medical_condition_id: string;
+      value?: string;
     }>;
+    isEditing?: boolean;
+    combinedTrackingId?: string;
   };
   TrackerHistory: {
     trackingId: string;

@@ -144,3 +144,60 @@ export const deleteTrackerEntry = async (
     throw error;
   }
 };
+
+export const updateTrackerEntry = async (
+  medicalConditionId: string,
+  combinedTrackingId: string,
+  trackingFactors: Array<{tracking_factor_id: string; value: number}>,
+) => {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.USER_CONDITION_TRACK}/${medicalConditionId}/${combinedTrackingId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          medical_condition_id: medicalConditionId,
+          tracking_factors: trackingFactors,
+        }),
+      },
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating tracker entry:', error);
+    throw error;
+  }
+};
+
+export const updateTrackingInfo = async (
+  medicalConditionId: string,
+  combinedTrackingId: string,
+  trackingFactors: Array<{id: string; value: string}>,
+): Promise<any> => {
+  try {
+    const response = await fetch(
+      `${API_CONFIG.BASE_URL}${API_CONFIG.USER_CONDITION_TRACK}/${API_CONFIG.USER_ID}/${combinedTrackingId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          medical_condition_id: medicalConditionId,
+          tracking_factors: trackingFactors.map(factor => ({
+            tracking_factor_id: factor.id,
+            value: parseFloat(factor.value),
+          })),
+        }),
+      },
+    );
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating tracking info:', error);
+    throw error;
+  }
+};

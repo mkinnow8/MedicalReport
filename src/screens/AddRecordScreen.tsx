@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
-import {saveTrackingInfo} from '../services/trackerService';
+import {saveTrackingInfo, updateTrackingInfo} from '../services/trackerService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddRecord'>;
 
@@ -27,10 +27,21 @@ interface InputField {
 }
 
 const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
-  const {trackerName, trackingFactors} = route.params;
+  const {trackerName, trackingFactors, isEditing, combinedTrackingId} =
+    route.params;
   const [values, setValues] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isEditing && trackingFactors) {
+      const initialValues: Record<string, string> = {};
+      trackingFactors.forEach(factor => {
+        initialValues[factor.id] = factor.value;
+      });
+      setValues(initialValues);
+    }
+  }, [isEditing, trackingFactors]);
 
   const getInputFields = (): InputField[] => {
     return trackingFactors.map(factor => ({
@@ -60,23 +71,41 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
 
     setSaving(true);
     try {
-      const response = await saveTrackingInfo(
-        route.params.medicalConditionId,
-        Object.entries(values).map(([id, value]) => ({id, value})),
-      );
+      const trackingData = Object.entries(values).map(([id, value]) => ({
+        id,
+        value,
+      }));
+      const response = isEditing
+        ? await updateTrackingInfo(
+            route.params.medicalConditionId,
+            combinedTrackingId!,
+            trackingData,
+          )
+        : await saveTrackingInfo(route.params.medicalConditionId, trackingData);
 
       if (response.success) {
-        Alert.alert('Success', 'Record saved successfully', [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Trackers'),
-          },
-        ]);
+        Alert.alert(
+          'Success',
+          `Record ${isEditing ? 'updated' : 'saved'} successfully`,
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Trackers'),
+            },
+          ],
+        );
       } else {
-        Alert.alert('Error', response.message || 'Failed to save record');
+        Alert.alert(
+          'Error',
+          response.message ||
+            `Failed to ${isEditing ? 'update' : 'save'} record`,
+        );
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to save record. Please try again.');
+      Alert.alert(
+        'Error',
+        `Failed to ${isEditing ? 'update' : 'save'} record. Please try again.`,
+      );
     } finally {
       setSaving(false);
     }
@@ -85,9 +114,12 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Add {trackerName} Record</Text>
+        <Text style={styles.title}>
+          {isEditing ? 'Edit' : 'Add'} {trackerName} Record
+        </Text>
         <Text style={styles.subtitle}>
-          Enter your {trackerName.toLowerCase()} reading
+          {isEditing ? 'Update' : 'Enter'} your {trackerName.toLowerCase()}{' '}
+          reading
         </Text>
       </View>
 
@@ -132,7 +164,9 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Record</Text>
+            <Text style={styles.saveButtonText}>
+              {isEditing ? 'Update' : 'Save'} Record
+            </Text>
           )}
         </TouchableOpacity>
       </View>

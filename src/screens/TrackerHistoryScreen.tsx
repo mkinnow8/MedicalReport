@@ -16,6 +16,7 @@ import {
   deleteTrackerEntry,
 } from '../services/trackerService';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import {Images} from '../assets/images';
 // @ts-ignore
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TrackerHistory'>;
@@ -41,7 +42,7 @@ interface UserConditionTrack {
   condition_values: CombinedTracking[];
 }
 
-const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
+const TrackerHistoryScreen: React.FC<Props> = ({route, navigation}) => {
   const {trackingId, conditionName} = route.params;
   const [loading, setLoading] = useState(true);
   const [tracks, setTracks] = useState<UserConditionTrack[]>([]);
@@ -122,6 +123,21 @@ const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
         },
       },
     ]);
+  };
+
+  const handleEdit = (entry: CombinedTracking) => {
+    navigation.navigate('AddRecord', {
+      medicalConditionId: trackingId,
+      trackerName: conditionName,
+      trackingFactors: entry.values.map(value => ({
+        id: value.tracking_factor_id,
+        name: value.name,
+        value: value.value.toString(),
+        unit: value.unit,
+      })),
+      isEditing: true,
+      combinedTrackingId: entry.combined_tracking_id,
+    });
   };
 
   if (loading) {
@@ -210,21 +226,31 @@ const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
               <View key={entry.combined_tracking_id} style={styles.entryCard}>
                 <View style={styles.entryHeader}>
                   <View style={styles.timeContainer}>
-                    {/* <Icon name="clock-outline" size={16} color="#666" /> */}
+                    <Image source={Images.clock} style={styles.smallIcon} />
                     <Text style={styles.timeText}>
                       {new Date(
                         entry.values[0]?.created_at,
                       ).toLocaleTimeString()}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(entry.combined_tracking_id)}
-                    style={styles.deleteButton}>
-                    <Image
-                      source={require('../assets/images/deleteIcon.png')}
-                      style={styles.deleteIcon}
-                    />
-                  </TouchableOpacity>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity
+                      onPress={() => handleEdit(entry)}
+                      style={styles.actionButton}>
+                      <Image
+                        source={Images.editIcon}
+                        style={styles.actionIcon}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(entry.combined_tracking_id)}
+                      style={styles.actionButton}>
+                      <Image
+                        source={Images.deleteIcon}
+                        style={styles.actionIcon}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={styles.readingsContainer}>
                   {entry.values.map(value => (
@@ -320,7 +346,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 4,
+    marginLeft: 8,
   },
   deleteButton: {
     padding: 4,
@@ -378,6 +404,23 @@ const styles = StyleSheet.create({
   clearButtonText: {
     color: '#007AFF',
     fontSize: 14,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    padding: 4,
+  },
+  actionIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+  },
+  smallIcon: {
+    width: 16,
+    height: 16,
+    resizeMode: 'contain',
   },
 });
 
