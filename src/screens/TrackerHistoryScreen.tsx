@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   getUserConditionTracks,
   deleteTrackerEntry,
 } from '../services/trackerService';
+import DateTimePicker from '@react-native-community/datetimepicker';
 // @ts-ignore
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TrackerHistory'>;
@@ -44,14 +45,18 @@ const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
   const {trackingId, conditionName} = route.params;
   const [loading, setLoading] = useState(true);
   const [tracks, setTracks] = useState<UserConditionTrack[]>([]);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
-  useEffect(() => {
-    fetchTracks();
-  }, []);
-
-  const fetchTracks = async () => {
+  const fetchTracks = useCallback(async () => {
     try {
-      const response = await getUserConditionTracks();
+      setLoading(true);
+      const response = await getUserConditionTracks(
+        startDate?.toISOString(),
+        endDate?.toISOString(),
+      );
       if (response.success) {
         setTracks(response.data);
       } else {
@@ -62,6 +67,32 @@ const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
     } finally {
       setLoading(false);
     }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchTracks();
+  }, [fetchTracks]);
+
+  const handleStartDateChange = (event: any, selectedDate?: Date) => {
+    setShowStartPicker(false);
+    if (selectedDate) {
+      setStartDate(selectedDate);
+      fetchTracks();
+    }
+  };
+
+  const handleEndDateChange = (event: any, selectedDate?: Date) => {
+    setShowEndPicker(false);
+    if (selectedDate) {
+      setEndDate(selectedDate);
+      fetchTracks();
+    }
+  };
+
+  const clearDateFilter = () => {
+    setStartDate(null);
+    setEndDate(null);
+    fetchTracks();
   };
 
   const handleDelete = async (combinedTrackingId: string) => {
@@ -126,6 +157,50 @@ const TrackerHistoryScreen: React.FC<Props> = ({route}) => {
         <Text style={styles.title}>{conditionName}</Text>
         <Text style={styles.subtitle}>Tracking History</Text>
       </View>
+
+      <View style={styles.filterContainer}>
+        <View style={styles.dateFilterRow}>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowStartPicker(true)}>
+            <Text style={styles.dateButtonText}>
+              {startDate ? startDate.toLocaleDateString() : 'Select Start Date'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowEndPicker(true)}>
+            <Text style={styles.dateButtonText}>
+              {endDate ? endDate.toLocaleDateString() : 'Select End Date'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {(startDate || endDate) && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={clearDateFilter}>
+            <Text style={styles.clearButtonText}>Clear Filter</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {showStartPicker && (
+        <DateTimePicker
+          value={startDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleStartDateChange}
+        />
+      )}
+
+      {showEndPicker && (
+        <DateTimePicker
+          value={endDate || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleEndDateChange}
+        />
+      )}
 
       <View style={styles.content}>
         {Object.entries(groupedEntries).map(([date, entries]) => (
@@ -272,6 +347,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  filterContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  dateButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  dateButtonText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  clearButton: {
+    marginTop: 12,
+    padding: 8,
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
   },
 });
 

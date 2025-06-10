@@ -72,19 +72,30 @@ export const getMedicalConditions = async (): Promise<ApiResponse> => {
   }
 };
 
-export const getUserConditionTracks =
-  async (): Promise<UserConditionTrackResponse> => {
-    try {
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.USER_CONDITION_TRACK}/${API_CONFIG.USER_ID}`,
-      );
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching user condition tracks:', error);
-      throw error;
+export const getUserConditionTracks = async (
+  startDate?: string,
+  endDate?: string,
+): Promise<UserConditionTrackResponse> => {
+  try {
+    let url = `${API_CONFIG.BASE_URL}${API_CONFIG.USER_CONDITION_TRACK}/${API_CONFIG.USER_ID}`;
+
+    // Add date parameters if provided
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+
+    if (params.toString()) {
+      url += `?${params.toString()}`;
     }
-  };
+
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching user condition tracks:', error);
+    throw error;
+  }
+};
 
 export const saveTrackingInfo = async (
   medicalConditionId: string,
