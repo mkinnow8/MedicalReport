@@ -10,13 +10,14 @@ import ReportComparisonScreen from '../screens/ReportComparisonScreen';
 import TrackersScreen from '../screens/TrackersScreen';
 import AddTrackerScreen from '../screens/AddTrackerScreen';
 import AddRecordScreen from '../screens/AddRecordScreen';
+import TrackerHistoryScreen from '../screens/TrackerHistoryScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppNavigator = () => {
   return (
     <Stack.Navigator
-      initialRouteName="UserInfo"
+      initialRouteName="BMI"
       screenOptions={{
         headerStyle: {
           backgroundColor: '#007AFF',
@@ -70,6 +71,11 @@ export const AppNavigator = () => {
         name="AddRecord"
         component={AddRecordScreen}
         options={{title: 'Add Record'}}
+      />
+      <Stack.Screen
+        name="TrackerHistory"
+        component={TrackerHistoryScreen}
+        options={{title: 'Tracker History'}}
       />
     </Stack.Navigator>
   );

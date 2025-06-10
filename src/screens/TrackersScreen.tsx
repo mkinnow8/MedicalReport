@@ -1,89 +1,140 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
   RefreshControl,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
+import {getUserConditionTracks} from '../services/trackerService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Trackers'>;
 
-const TrackersScreen: React.FC<Props> = ({navigation}) => {
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [trackers, setTrackers] = React.useState([
-    {
-      id: '1',
-      name: 'Blood Pressure',
-      lastReading: '120/80',
-      lastUpdated: '2024-03-14T10:30:00',
-      status: 'normal',
-    },
-    {
-      id: '2',
-      name: 'Blood Sugar',
-      lastReading: '95 mg/dL',
-      lastUpdated: '2024-03-14T08:15:00',
-      status: 'normal',
-    },
-    {
-      id: '3',
-      name: 'Heart Rate',
-      lastReading: '72 bpm',
-      lastUpdated: '2024-03-14T09:45:00',
-      status: 'normal',
-    },
-  ]);
+interface TrackingValue {
+  tracking_factor_id: string;
+  value: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  unit: string;
+}
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    // TODO: Implement actual data fetching
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 2000);
+interface CombinedTracking {
+  combined_tracking_id: string;
+  values: TrackingValue[];
+}
+
+interface UserConditionTrack {
+  medical_condition_id: string;
+  medical_condition_name: string;
+  medical_condition_description: string;
+  condition_values: CombinedTracking[];
+}
+
+const TrackersScreen: React.FC<Props> = ({navigation}) => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [tracks, setTracks] = useState<UserConditionTrack[]>([]);
+
+  useEffect(() => {
+    fetchTracks();
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'normal':
-        return '#4CAF50';
-      case 'warning':
-        return '#FFC107';
-      case 'critical':
-        return '#F44336';
-      default:
-        return '#666';
+  const fetchTracks = async () => {
+    try {
+      const response = await getUserConditionTracks();
+      if (response.success) {
+        setTracks(response.data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch tracking data');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch tracking data');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const renderTrackerItem = (tracker: any) => (
-    <TouchableOpacity
-      key={tracker.id}
-      style={styles.trackerCard}
-      onPress={() => {
-        // TODO: Navigate to tracker detail screen
-      }}>
-      <View style={styles.trackerHeader}>
-        <Text style={styles.trackerName}>{tracker.name}</Text>
-        <View
-          style={[
-            styles.statusIndicator,
-            {backgroundColor: getStatusColor(tracker.status)},
-          ]}
-        />
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTracks();
+  };
+
+  const getStatusColor = (_values: TrackingValue[]) => {
+    // TODO: Implement proper status logic based on values and normal ranges
+    return '#4CAF50'; // Default to normal for now
+  };
+
+  const formatReading = (values: TrackingValue[]) => {
+    if (values.length === 0) return 'No readings';
+
+    // For blood pressure, combine systolic and diastolic
+    const systolic = values.find(v =>
+      v.name.toLowerCase().includes('systolic'),
+    );
+    const diastolic = values.find(v =>
+      v.name.toLowerCase().includes('diastolic'),
+    );
+    if (systolic && diastolic) {
+      return `${systolic.value}/${diastolic.value} ${systolic.unit}`;
+    }
+
+    // For single value readings
+    return `${values[0].value} ${values[0].unit}`;
+  };
+
+  const renderTrackerItem = (track: UserConditionTrack) => {
+    const latestReadings = track.condition_values[0]?.values || [];
+    const latestTimestamp = latestReadings[0]?.created_at;
+
+    return (
+      <TouchableOpacity
+        key={track.medical_condition_id}
+        style={styles.trackerCard}
+        onPress={() => {
+          navigation.navigate('TrackerHistory', {
+            trackingId: track.medical_condition_id,
+            conditionName: track.medical_condition_name,
+          });
+        }}>
+        <View style={styles.trackerHeader}>
+          <Text style={styles.trackerName}>{track.medical_condition_name}</Text>
+          <View
+            style={[
+              styles.statusIndicator,
+              {backgroundColor: getStatusColor(latestReadings)},
+            ]}
+          />
+        </View>
+        <View style={styles.trackerInfo}>
+          <Text style={styles.readingLabel}>Last Reading:</Text>
+          <Text style={styles.readingValue}>
+            {formatReading(latestReadings)}
+          </Text>
+        </View>
+        <Text style={styles.lastUpdated}>
+          Last updated:{' '}
+          {latestTimestamp
+            ? new Date(latestTimestamp).toLocaleString()
+            : 'Never'}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
-      <View style={styles.trackerInfo}>
-        <Text style={styles.readingLabel}>Last Reading:</Text>
-        <Text style={styles.readingValue}>{tracker.lastReading}</Text>
-      </View>
-      <Text style={styles.lastUpdated}>
-        Last updated: {new Date(tracker.lastUpdated).toLocaleString()}
-      </Text>
-    </TouchableOpacity>
-  );
+    );
+  }
 
   return (
     <ScrollView
@@ -99,7 +150,7 @@ const TrackersScreen: React.FC<Props> = ({navigation}) => {
           <Text style={styles.addButtonText}>Add Tracker</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.content}>{trackers.map(renderTrackerItem)}</View>
+      <View style={styles.content}>{tracks.map(renderTrackerItem)}</View>
     </ScrollView>
   );
 };
@@ -108,6 +159,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     backgroundColor: '#fff',

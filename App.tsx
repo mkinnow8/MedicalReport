@@ -11,15 +11,18 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {AppNavigator} from './src/navigation/AppNavigator';
 import {UserProvider} from './src/context/UserContext';
 import {ReportsProvider} from './src/context/ReportsContext';
+import {MedicalConditionsProvider} from './src/context/MedicalConditionsContext';
 
 const App = () => {
   return (
     <SafeAreaProvider>
       <UserProvider>
         <ReportsProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
+          <MedicalConditionsProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          </MedicalConditionsProvider>
         </ReportsProvider>
       </UserProvider>
     </SafeAreaProvider>

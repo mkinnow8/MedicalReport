@@ -8,9 +8,11 @@ import {
   ScrollView,
   Alert,
   KeyboardTypeOptions,
+  ActivityIndicator,
 } from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/navigation';
+import {saveTrackingInfo} from '../services/trackerService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AddRecord'>;
 
@@ -19,103 +21,65 @@ interface InputField {
   label: string;
   placeholder: string;
   keyboardType: KeyboardTypeOptions;
+  unit: string;
+  normalRange: string;
+  isRequired: boolean;
 }
 
 const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
-  const {trackerType, trackerName} = route.params;
+  const {trackerName, trackingFactors} = route.params;
   const [values, setValues] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const getInputFields = (): InputField[] => {
-    switch (trackerType) {
-      case 'blood_pressure':
-        return [
-          {
-            id: 'systolic',
-            label: 'Systolic (mmHg)',
-            placeholder: 'Enter systolic pressure',
-            keyboardType: 'numeric',
-          },
-          {
-            id: 'diastolic',
-            label: 'Diastolic (mmHg)',
-            placeholder: 'Enter diastolic pressure',
-            keyboardType: 'numeric',
-          },
-          {
-            id: 'pulse',
-            label: 'Pulse Rate (bpm)',
-            placeholder: 'Enter pulse rate',
-            keyboardType: 'numeric',
-          },
-        ];
-      case 'blood_sugar':
-        return [
-          {
-            id: 'glucose',
-            label: 'Blood Glucose (mg/dL)',
-            placeholder: 'Enter blood glucose level',
-            keyboardType: 'numeric',
-          },
-          {
-            id: 'time',
-            label: 'Time of Reading',
-            placeholder: 'e.g., Before breakfast',
-            keyboardType: 'default',
-          },
-        ];
-      case 'heart_rate':
-        return [
-          {
-            id: 'rate',
-            label: 'Heart Rate (bpm)',
-            placeholder: 'Enter heart rate',
-            keyboardType: 'numeric',
-          },
-        ];
-      case 'weight':
-        return [
-          {
-            id: 'weight',
-            label: 'Weight (kg)',
-            placeholder: 'Enter weight',
-            keyboardType: 'numeric',
-          },
-        ];
-      case 'temperature':
-        return [
-          {
-            id: 'temperature',
-            label: 'Temperature (°C)',
-            placeholder: 'Enter temperature',
-            keyboardType: 'numeric',
-          },
-        ];
-      default:
-        return [];
-    }
+    return trackingFactors.map(factor => ({
+      id: factor.id,
+      label: `${factor.name} (${
+        factor.unit ? factor.unit : factor?.normal_range
+      })`,
+      placeholder: `Enter ${factor.name.toLowerCase()}`,
+      keyboardType: 'numeric',
+      unit: factor.unit,
+      normalRange: factor.normal_range,
+      isRequired: factor.is_required,
+    }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate inputs
     const inputFields = getInputFields();
-    const missingFields = inputFields.filter(field => !values[field.id]);
+    const missingFields = inputFields.filter(
+      field => field.isRequired && !values[field.id],
+    );
 
     if (missingFields.length > 0) {
       Alert.alert('Missing Information', 'Please fill in all required fields.');
       return;
     }
 
-    // TODO: Save the record to the database
-    console.log('Saving record:', {
-      type: trackerType,
-      values,
-      notes,
-      timestamp: new Date().toISOString(),
-    });
+    setSaving(true);
+    try {
+      const response = await saveTrackingInfo(
+        route.params.medicalConditionId,
+        Object.entries(values).map(([id, value]) => ({id, value})),
+      );
 
-    // Navigate back to trackers screen
-    navigation.navigate('Trackers');
+      if (response.success) {
+        Alert.alert('Success', 'Record saved successfully', [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('Trackers'),
+          },
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Failed to save record');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save record. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -130,7 +94,10 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
       <View style={styles.content}>
         {getInputFields().map(field => (
           <View key={field.id} style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>{field.label}</Text>
+            <Text style={styles.inputLabel}>
+              {field.label}
+              {field.isRequired && <Text style={styles.required}> *</Text>}
+            </Text>
             <TextInput
               style={styles.input}
               placeholder={field.placeholder}
@@ -138,6 +105,11 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
               value={values[field.id]}
               onChangeText={text => setValues({...values, [field.id]: text})}
             />
+            {field.normalRange && (
+              <Text style={styles.normalRange}>
+                Normal range: {field.normalRange} {field.unit}
+              </Text>
+            )}
           </View>
         ))}
 
@@ -153,8 +125,15 @@ const AddRecordScreen: React.FC<Props> = ({route, navigation}) => {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Record</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}>
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Record</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -194,6 +173,9 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
+  required: {
+    color: '#FF3B30',
+  },
   input: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -201,6 +183,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  normalRange: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   notesInput: {
     height: 100,
@@ -212,6 +199,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 16,
+  },
+  saveButtonDisabled: {
+    opacity: 0.7,
   },
   saveButtonText: {
     color: '#fff',

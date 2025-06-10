@@ -20,6 +20,19 @@ export type RootStackParamList = {
   AddRecord: {
     trackerType: string;
     trackerName: string;
+    medicalConditionId: string;
+    trackingFactors: Array<{
+      id: string;
+      name: string;
+      unit: string;
+      normal_range: string;
+      is_required: boolean;
+      medical_condition_id: string;
+    }>;
+  };
+  TrackerHistory: {
+    trackingId: string;
+    conditionName: string;
   };
 };
 
